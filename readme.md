@@ -11,7 +11,7 @@ Here are screenshots of the **Sam Robot** in its custom-styled simulation enviro
 ### Orthographic Overview of Home Environment
 ![Gazebo Home Ortho](doc/images/gazebo_home_ortho.png)
 
-### Perspective View of Sam Robot (Bright Orange Chassis)
+### Perspective View of Sam Robot 
 ![Gazebo Home Angle 1](doc/images/gazebo_home_angle1.png)
 
 ### Interior Detail & Wall Layout
