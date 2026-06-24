@@ -1,362 +1,156 @@
 # Sam Robot 🤖
 
-A ROS2 differential drive robot built for autonomous navigation, mapping, and SLAM operations in Gazebo simulation environment.
+An advanced ROS2 (Humble) autonomous differential drive robot simulation configured for SLAM mapping, localization, and navigation within custom Gazebo Fortress environments.
 
-![Sam Robot](doc/images/robot.png)
+---
 
-## Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-  - [Ubuntu 24.04 Installation](#ubuntu-2404-installation)
-  - [ROS2 jazzy Installation](#ros2-jazzy-installation)
-  - [Gazebo Harmonic Installation](#gazebo-harmonic-installation)
-  - [Dependencies Installation](#dependencies-installation)
-  - [Project Setup](#project-setup)
-- [Package Structure](#package-structure)
-- [Usage](#usage)
-  - [URDF Validation](#urdf-validation)
-  - [Gazebo Simulation](#gazebo-simulation)
-  - [Robot Control](#robot-control)
-  - [SLAM and Mapping](#slam-and-mapping)
-  - [Navigation](#navigation)
-  - [Navigation with SLAM](#navigation-with-slam)
-- [Screenshots](#screenshots)
-- [Contributing](#contributing)
-- [License](#license)
+## 📸 Simulation Gallery
 
-## Overview
+Here are screenshots of the **Sam Robot** in its custom-styled simulation environment:
 
-Sam Robot is a comprehensive ROS2 project featuring a differential drive robot designed for autonomous navigation and simultaneous localization and mapping (SLAM). The project includes complete simulation setup, robot description, sensor integration, and navigation stack implementation.
+### Orthographic Overview of Home Environment
+![Gazebo Home Ortho](doc/images/gazebo_home_ortho.png)
 
-![Robot Workspace](doc/images/workspace.png)
+### Perspective View of Sam Robot (Bright Orange Chassis)
+![Gazebo Home Angle 1](doc/images/gazebo_home_angle1.png)
 
-## Features
+### Interior Detail & Wall Layout
+![Gazebo Home Angle 2](doc/images/gazebo_home_angle2.png)
 
-- **Complete Robot Description**: URDF models with materials and Gazebo plugins
-- **Simulation Environment**: Custom Gazebo worlds and spawn configurations
-- **Sensor Fusion**: EKF (Extended Kalman Filter) for state estimation
-- **Teleoperation**: Keyboard and joystick control support
-- **SLAM Capability**: Real-time mapping using Nav2 stack
-- **Autonomous Navigation**: Path planning in known and unknown environments
-- **Modular Design**: Well-organized package structure for easy maintenance
+### Lidar Sensor Rays Visualization
+![Gazebo Lidar Visual](doc/images/gazebo_lidar_visual.png)
 
-## System Requirements
+### Gazebo Teleoperation Overlay
+![Gazebo Teleop GUI](doc/images/gazebo_teleop_gui.png)
 
-- **Operating System**: Ubuntu 24.04 LTS
-- **ROS Version**: ROS2 Jazzy
-- **Gazebo Version**: Gazebo Harmonic (gz_sim)
-- **RAM**: Minimum 4GB (8GB recommended)
-- **Storage**: At least 10GB free space
+### Clean RViz Mapping Workspace (Transform Fix Verified)
+![RViz Mapping Clean](doc/images/rviz_mapping_clean.png)
 
-## Installation
+---
 
-### Ubuntu 24.04 Installation
+## 🛠️ Architecture & Package Details
 
-1. Download Ubuntu 24.04 LTS from [official website](https://ubuntu.com/download/desktop)
-2. Create a bootable USB drive using tools like Rufus or balenaEtcher
-3. Install Ubuntu following the installation wizard
-4. Update your system:
-```bash
-sudo apt update && sudo apt upgrade -y
-```
+The workspace consists of 6 core packages, each responsible for a distinct aspect of the robot's autonomy stack:
 
-### ROS2 Jazzy Installation
+### 1. `sam_description`
+* **Purpose**: Defines the robot's physical structure, geometry, and visual properties using URDF/Xacro.
+* **Details**: It models a differential drive chassis with a custom sensor tower, castor wheels, and sensor joints. It specifies mass, moments of inertia, and visual materials (including a custom **Orange** chassis color). It also contains the Gazebo sensor plugins for Lidar, IMU, GPS, and Joint State Publishers.
 
-1. Set up ROS2 repository:
-```bash
-sudo apt install software-properties-common
-sudo add-apt-repository universe
-sudo apt update && sudo apt install curl -y
-sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-```
+### 2. `sam_gazebo`
+* **Purpose**: Configures the Gazebo Fortress (Ignition) simulation worlds and handles robot spawning.
+* **Details**: Contains customized SDF worlds (`empty.sdf`, `home.sdf`, and `world.sdf`) adapted with bright lighting, custom floor colors, and painted walls to prevent black rendering issues. It includes the spawn scripts that instantiate the robot description in the simulator.
 
-2. Install ROS2 Jazzy:
+### 3. `sam_ekf`
+* **Purpose**: Manages sensor fusion and state estimation.
+* **Details**: Utilizes `robot_localization`'s Extended Kalman Filter (EKF) node. It fuses wheel encoder odometry and IMU data (angular velocity Z and linear acceleration X) to generate a smooth, drift-free `/odometry/filtered` topic and the crucial `odom` -> `base_footprint` TF transform.
+
+### 4. `sam_control`
+* **Purpose**: Handles teleoperation interfaces.
+* **Details**: Houses launch files for joystick controller mappings (`teleop_twist_joy`) and provides bindings to control the robot's linear and angular velocities manually.
+
+### 5. `sam_slam`
+* **Purpose**: Performs Simultaneous Localization and Mapping (SLAM).
+* **Details**: Uses `slam_toolbox` to generate highly accurate 2D occupancy grid maps in real-time as the robot explores. It publishes the `map` -> `odom` TF transform and coordinates RViz visualization.
+
+### 6. `sam_navigation`
+* **Purpose**: Implements autonomous path planning and obstacle avoidance.
+* **Details**: Leverages the ROS2 Nav2 stack. It loads saved maps, configures local/global costmaps, uses AMCL for particle-filter-based localization, and executes path planning behaviors to guide the robot to user-selected goal poses safely.
+
+---
+
+## ⚙️ System Requirements
+* **Operating System**: Ubuntu 22.04 LTS (Jammy Jellyfish)
+* **ROS2 Distro**: Humble Hawksbill
+* **Simulator**: Gazebo Fortress (Ignition Gazebo 6)
+
+---
+
+## 📥 Installation Guide
+
+Follow these commands line-by-line to install the dependencies and compile the workspace on your Ubuntu 22.04 system.
+
+### Step 1: Install System and ROS2 Dependencies
+Run this command in your terminal to install the Nav2 stack, SLAM toolbox, EKF filters, and Gazebo-ROS bridge packages:
 ```bash
 sudo apt update
-sudo apt install ros-jazzy-desktop -y
+sudo apt install -y \
+  ros-humble-ros-gz \
+  ros-humble-navigation2 \
+  ros-humble-nav2-bringup \
+  ros-humble-robot-localization \
+  ros-humble-slam-toolbox \
+  ros-humble-teleop-twist-keyboard \
+  ros-humble-teleop-twist-joy \
+  ros-humble-joy \
+  ros-humble-xacro \
+  ros-humble-urdf \
+  ros-humble-robot-state-publisher \
+  ros-humble-joint-state-publisher \
+  ros-humble-joint-state-publisher-gui \
+  ros-humble-rviz2 \
+  ros-humble-interactive-marker-twist-server
 ```
 
-3. Install additional ROS2 tools:
+### Step 2: Clone and Setup Workspace
+Ensure your workspace is located in the recommended directory:
 ```bash
-sudo apt install python3-argcomplete python3-colcon-common-extensions python3-rosdep python3-vcstool -y
+# Navigate to the workspace
+cd /home/hasmitha/.gemini/antigravity/scratch/sam_robot
 ```
 
-4. Initialize rosdep:
+### Step 3: Build the Workspace
+Build the packages using `colcon`:
 ```bash
-sudo rosdep init
-rosdep update
+# Source ROS2 Humble first
+source /opt/ros/humble/setup.bash
+
+# Build the project
+colcon build --symlink-install
 ```
 
-5. Set up environment:
+---
+
+## 🚀 Launching Sequence
+
+To run the full simulation with mapping or navigation, open a new terminal window for each step, navigate to the workspace directory, and execute the following commands line-by-line.
+
+### **Terminal 1: Start Gazebo World and Spawn Sam Robot**
+This command starts Gazebo Sim, loads the bright home layout, spawns the Orange Sam robot, runs the robot state publisher, and starts the EKF filter:
 ```bash
-echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
-source ~/.bashrc
+cd /home/hasmitha/.gemini/antigravity/scratch/sam_robot
+source /opt/ros/humble/setup.bash
+. install/setup.bash
+ros2 launch sam_gazebo spawn_robot.launch.py world:=home.sdf
 ```
 
-### Gazebo Harmonic Installation
-
-1. Install Gazebo Harmonic:
+### **Terminal 2: Keyboard Teleoperation**
+Use this to drive the robot around manually using keyboard keys:
 ```bash
-sudo apt-get update
-sudo apt-get install lsb-release wget gnupg
-
-sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-
-sudo apt-get update
-sudo apt-get install gz-harmonic -y
-```
-
-2. Install Gazebo-ROS2 bridge:
-```bash
-sudo apt install ros-jazzy-ros-gz -y
-```
-
-### Dependencies Installation
-
-Install required ROS2 packages and dependencies:
-
-```bash
-# Navigation and SLAM packages
-sudo apt install ros-jazzy-nav2-bringup ros-jazzy-nav2-msgs -y
-sudo apt install ros-jazzy-robot-localization -y
-sudo apt install ros-jazzy-slam-toolbox -y
-
-# Control packages
-sudo apt install ros-jazzy-teleop-twist-keyboard -y
-sudo apt install ros-jazzy-joy ros-jazzy-teleop-twist-joy -y
-sudo apt install ros-jazzy-controller-manager -y
-sudo apt install ros-jazzy-diff-drive-controller -y
-sudo apt install ros-jazzy-joint-state-broadcaster -y
-
-# URDF and robot description packages
-sudo apt install ros-jazzy-urdf ros-jazzy-xacro -y
-sudo apt install ros-jazzy-robot-state-publisher -y
-sudo apt install ros-jazzy-joint-state-publisher -y
-sudo apt install ros-jazzy-joint-state-publisher-gui -y
-
-# Gazebo plugins
-sudo apt install ros-jazzy-gazebo-ros-pkgs -y
-sudo apt install ros-jazzy-gazebo-plugins -y
-
-# Additional utilities
-sudo apt install ros-jazzy-tf2-tools -y
-sudo apt install ros-jazzy-rqt -y
-sudo apt install ros-jazzy-rviz2 -y
-```
-
-### Project Setup
-
-1. Create workspace and clone repository:
-```bash
-mkdir -p ~/sam_ws/src
-cd ~/sam_ws/src
-git clone https://github.com/yourusername/sam_robot.git
-```
-
-2. Install dependencies using rosdep:
-```bash
-cd ~/sam_ws
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-3. Build the project:
-```bash
-cd ~/sam_ws
-colcon build
-```
-
-4. Source the workspace:
-```bash
-source ~/sam_ws/install/setup.bash
-echo "source ~/sam_ws/install/setup.bash" >> ~/.bashrc
-```
-
-## Package Structure
-
-```
-sam_robot/
-├── sam_description/     # Robot URDF, materials, and validation
-├── sam_gazebo/         # Gazebo worlds and spawn configurations  
-├── sam_ekf/            # EKF configuration for sensor fusion
-├── sam_control/        # Teleoperation (keyboard and joystick)
-├── sam_slam/           # SLAM and mapping capabilities
-├── sam_navigation/     # Autonomous navigation stack
-└── doc/
-    └── images/           # Documentation images
-```
-
-### Package Details
-
-- **sam_description**: Contains URDF files, materials, Gazebo plugins, and `check_urdf_file.launch.py` for robot validation
-- **sam_gazebo**: Gazebo simulation environments, `spawn_robot.launch.py`, and world configurations
-- **sam_ekf**: EKF node configuration for sensor fusion and state estimation
-- **sam_control**: Teleoperation nodes for keyboard and joystick control
-- **sam_slam**: SLAM implementation using Nav2 stack for real-time mapping
-- **sam_navigation**: Autonomous navigation in known maps and unknown environments
-
-## Usage
-
-### URDF Validation
-
-Validate the robot URDF model:
-```bash
-ros2 launch sam_description check_urdf.launch.py
-```
-
-This will check if the robot model is correctly defined and display any issues.
-
-### Gazebo Simulation
-
-1. Launch Gazebo world:
-```bash
-ros2 launch sam_gazebo world.launch.py
-```
-
-2. Spawn the robot in Gazebo:
-```bash
-ros2 launch sam_gazebo spawn_robot.launch.py
-```
-
-![Gazebo Simulation](doc/images/slam.png)
-
-### Robot Control
-
-Control the robot using keyboard:
-```bash
+cd /home/hasmitha/.gemini/antigravity/scratch/sam_robot
+source /opt/ros/humble/setup.bash
+. install/setup.bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-Or use joystick control:
+### **Terminal 3: SLAM Mapping (Create a Map)**
+Launches the SLAM Toolbox and opens RViz, showing the map as the robot drives around:
 ```bash
-ros2 launch sam_control teleop.launch.py
-```
-
-### SLAM and Mapping
-
-Launch SLAM for mapping unknown environments:
-```bash
+cd /home/hasmitha/.gemini/antigravity/scratch/sam_robot
+source /opt/ros/humble/setup.bash
+. install/setup.bash
 ros2 launch sam_slam mapping.launch.py
 ```
 
-This will start the SLAM toolbox and allow you to create maps while exploring the environment.
-
-![SLAM Process](doc/images/navigation.png)
-
-### Navigation
-
-For autonomous navigation in known maps:
+### **Terminal 4: Autonomous Navigation (Navigate a Saved Map)**
+If you already have a saved map and want the robot to plan paths autonomously:
 ```bash
+cd /home/hasmitha/.gemini/antigravity/scratch/sam_robot
+source /opt/ros/humble/setup.bash
+. install/setup.bash
 ros2 launch sam_navigation navigation.launch.py
 ```
 
-### Navigation with SLAM
-
-For navigation in unknown environments with simultaneous mapping:
-```bash
-ros2 launch sam_navigation navigation_with_slam.launch.py
-```
-
-## Screenshots
-
-### Robot Model
-![Robot Model](doc/images/robot.png)
-
-### SLAM in Action
-![SLAM](doc/images/slam.png)
-
-### Navigation Interface
-![Navigation](doc/images/navigation.png)
-
-### Workspace Setup
-![Workspace](doc/images/workspace.png)
-
-## Launch Sequence
-
-For a complete simulation session, follow this sequence:
-
-1. **Terminal 1** - Launch Gazebo world:
-```bash
-ros2 launch sam_gazebo world.launch.py
-```
-
-2. **Terminal 2** - Spawn robot:
-```bash
-ros2 launch sam_gazebo spawn_robot.launch.py
-```
-
-3. **Terminal 3** - Choose your operation mode:
-
-   For mapping:
-   ```bash
-   ros2 launch sam_slam mapping.launch.py
-   ```
-
-   For navigation:
-   ```bash
-   ros2 launch sam_navigation navigation.launch.py
-   ```
-
-   For navigation with SLAM:
-   ```bash
-   ros2 launch sam_navigation navigation_with_slam.launch.py
-   ```
-
-4. **Terminal 4** - Control robot (if needed):
-```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Gazebo not starting**: Ensure Gazebo Harmonic is properly installed and sourced
-2. **URDF errors**: Run the URDF checker to identify model issues
-3. **Navigation not working**: Check if map is loaded and robot localization is active
-4. **Control not responding**: Verify controller nodes are running and topics are published
-
-### Useful Commands
-
-```bash
-# Check active topics
-ros2 topic list
-
-# Monitor robot state
-ros2 topic echo /robot_state
-
-# View TF tree
-ros2 run tf2_tools view_frames
-
-# Check node status
-ros2 node list
-```
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details.
-
 ---
 
-**Happy Robotics! 🤖**
-
-For questions or support, please open an issue on GitHub. or 
-## contact:
-
----
-Prudhvi Raj
----
-prudhvirajchalapaka@gmail.com
+## 📄 License
+This project is licensed under the Apache License 2.0. See the `LICENSE` file for details.
