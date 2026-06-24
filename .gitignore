@@ -1,0 +1,17 @@
+# ROS2 build artifacts
+build/
+install/
+log/
+.colcon/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
